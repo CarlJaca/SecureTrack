@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of system security status and file monitoring activities{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="stat-header">Protected Objects</div>
+        <div class="stat-value">{{ stats.protected }}</div>
+        <div class="stat-desc">Files and folders being monitored</div>
+        <a href="{{ url_for('protected_objects') }}" class="stat-link" style="color: var(--info);">View all <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="fa-solid fa-bell"></i></div>
+        <div class="stat-header">Active Alerts</div>
+        <div class="stat-value">{{ stats.alerts }}</div>
+        <div class="stat-desc">Require immediate attention</div>
+        <a href="{{ url_for('security_alerts') }}" class="stat-link" style="color: var(--danger);">View alerts <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-file-waveform"></i></div>
+        <div class="stat-header">Changes Detected</div>
+        <div class="stat-value">{{ stats.changes }}</div>
+        <div class="stat-desc">File system changes recorded</div>
+        <a href="{{ url_for('file_events') }}" class="stat-link" style="color: var(--success);">View events <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-header">Active Users</div>
+        <div class="stat-value">{{ stats.users }}</div>
+        <div class="stat-desc">Users active in the system</div>
+        <a href="{{ url_for('users') }}" class="stat-link" style="color: var(--accent-cyan);">View users <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></a>
+    </div>
+</div>
+
+<div class="dashboard-panels">
+    <!-- Recent Security Activity -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="fa-solid fa-clock-rotate-left" style="color: var(--text-muted); font-size: 0.9rem;"></i> Recent Security Activity</h3>
+            <a href="{{ url_for('file_events') }}" class="view-all">View all</a>
+        </div>
+        {% if activities %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Object</th>
+                    <th>Date & Time</th>
+                    <th>Risk Level</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in activities %}
+                <tr>
+                    <td><i class="fa-regular fa-user" style="margin-right: 5px; color: var(--text-muted);"></i> {{ a.user_name or 'Unknown' }}</td>
+                    <td>
+                        {% if a.event_type == 'Modified' %}<span style="color: var(--warning);"><i class="fa-solid fa-pen" style="margin-right: 3px; font-size: 0.75em;"></i>Modified</span>
+                        {% elif a.event_type == 'Deleted' %}<span style="color: var(--danger);"><i class="fa-solid fa-trash" style="margin-right: 3px; font-size: 0.75em;"></i>Deleted</span>
+                        {% elif a.event_type == 'Created' %}<span style="color: var(--success);"><i class="fa-solid fa-plus" style="margin-right: 3px; font-size: 0.75em;"></i>Created</span>
+                        {% elif a.event_type == 'Downloaded' %}<span style="color: var(--info);"><i class="fa-solid fa-download" style="margin-right: 3px; font-size: 0.75em;"></i>Downloaded</span>
+                        {% elif a.event_type == 'Viewed' %}<span style="color: var(--accent-cyan);"><i class="fa-solid fa-eye" style="margin-right: 3px; font-size: 0.75em;"></i>Viewed</span>
+                        {% elif a.event_type == 'Moved' %}<span style="color: var(--accent-purple);"><i class="fa-solid fa-arrows-up-down" style="margin-right: 3px; font-size: 0.75em;"></i>Moved</span>
+                        {% else %}<span>{{ a.event_type }}</span>{% endif %}
+                    </td>
+                    <td><i class="fa-regular fa-file" style="margin-right: 5px; color: var(--text-muted);"></i> {{ a.object_name or 'Unknown' }}</td>
+                    <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);">{{ a.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                    <td><span class="badge badge-{{ a.risk_level|lower }}">{{ a.risk_level }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-regular fa-clock"></i>
+            <h4>No Recent Activity</h4>
+            <p>File events will appear here when monitored files are accessed or changed.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="fa-solid fa-bell" style="color: var(--danger); font-size: 0.9rem;"></i> Recent Alerts</h3>
+            <a href="{{ url_for('security_alerts') }}" class="view-all">View all</a>
+        </div>
+        {% if alerts %}
+        <div class="alert-list">
+            {% for alert in alerts %}
+            <div class="alert-item">
+                <div class="alert-info">
+                    <div class="alert-title-row">
+                        <i class="fa-solid fa-triangle-exclamation" style="color:
+                            {% if alert.severity == 'Critical' %}var(--danger)
+                            {% elif alert.severity == 'High' %}var(--accent-red)
+                            {% elif alert.severity == 'Medium' %}var(--warning)
+                            {% else %}var(--info){% endif %}; font-size: 0.85rem;"></i>
+                        <span class="alert-title">{{ alert.title }}</span>
+                    </div>
+                    <span class="alert-desc">{{ alert.description[:80] }}{% if alert.description|length > 80 %}...{% endif %}</span>
+                </div>
+                <div class="alert-meta">
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">{{ alert.created_at.strftime('%I:%M %p') }}</span>
+                    <span class="badge badge-{{ alert.severity|lower }}">{{ alert.severity }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-shield-halved"></i>
+            <h4>No Active Alerts</h4>
+            <p>All monitored systems are secure.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

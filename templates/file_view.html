@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block page_title %}File Details{% endblock %}
+{% block page_subtitle %}Viewing details for protected object{% endblock %}
+
+{% block content %}
+<div class="panel" style="margin-bottom: 20px;">
+    <div class="panel-header">
+        <h3 class="panel-title">
+            <i class="{% if obj.object_type == 'File' %}fa-regular fa-file{% else %}fa-regular fa-folder{% endif %}" style="color: var(--info);"></i>
+            {{ obj.name }}
+        </h3>
+        <div class="btn-group">
+            {% if obj.object_type == 'File' %}
+            <a href="{{ url_for('download_file', obj_id=obj.id) }}" class="btn btn-sm btn-success"><i class="fa-solid fa-download"></i> Download</a>
+            {% endif %}
+            <a href="{{ url_for('my_files') if session.get('role') != 'Administrator' else url_for('protected_objects') }}" class="btn btn-sm btn-outline"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 10px 0;">
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Object Type</div>
+            <div style="font-size: 0.9rem; font-weight: 600;">{{ obj.object_type }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Path</div>
+            <div style="font-size: 0.85rem;"><code>{{ obj.path }}</code></div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Monitoring</div>
+            <div><span class="badge badge-{{ obj.monitoring_status|lower }}">{{ obj.monitoring_status }}</span></div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Integrity</div>
+            <div>
+                <span class="integrity-indicator">
+                    <span class="integrity-dot {{ obj.integrity_status|lower }}"></span>
+                    {{ obj.integrity_status }}
+                </span>
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Original Hash</div>
+            <div>{% if obj.original_hash %}<span class="hash-text">{{ obj.original_hash[:24] }}...</span>{% else %}<span style="color: var(--text-muted);">N/A</span>{% endif %}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Current Hash</div>
+            <div>{% if obj.current_hash %}<span class="hash-text">{{ obj.current_hash[:24] }}...</span>{% else %}<span style="color: var(--text-muted);">N/A</span>{% endif %}</div>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-clock-rotate-left" style="color: var(--text-muted);"></i> Recent Events</h3>
+    </div>
+
+    {% if recent_events %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Event</th>
+                <th>Risk</th>
+                <th>Date & Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in recent_events %}
+            <tr>
+                <td><i class="fa-regular fa-user" style="margin-right: 4px; color: var(--text-muted);"></i> {{ e.user_name or 'Unknown' }}</td>
+                <td>
+                    {% if e.event_type == 'Viewed' %}<span style="color: var(--accent-cyan);"><i class="fa-solid fa-eye" style="margin-right: 3px; font-size: 0.75em;"></i>Viewed</span>
+                    {% elif e.event_type == 'Downloaded' %}<span style="color: var(--info);"><i class="fa-solid fa-download" style="margin-right: 3px; font-size: 0.75em;"></i>Downloaded</span>
+                    {% elif e.event_type == 'Modified' %}<span style="color: var(--warning);"><i class="fa-solid fa-pen" style="margin-right: 3px; font-size: 0.75em;"></i>Modified</span>
+                    {% elif e.event_type == 'Deleted' %}<span style="color: var(--danger);"><i class="fa-solid fa-trash" style="margin-right: 3px; font-size: 0.75em;"></i>Deleted</span>
+                    {% elif e.event_type == 'Created' %}<span style="color: var(--success);"><i class="fa-solid fa-plus" style="margin-right: 3px; font-size: 0.75em;"></i>Created</span>
+                    {% else %}<span>{{ e.event_type }}</span>{% endif %}
+                </td>
+                <td><span class="badge badge-{{ e.risk_level|lower }}">{{ e.risk_level }}</span></td>
+                <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-muted);">{{ e.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-regular fa-clock"></i>
+        <h4>No Events</h4>
+        <p>No activity has been recorded for this object.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

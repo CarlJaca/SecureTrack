@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Audit Logs{% endblock %}
+{% block page_subtitle %}Complete record of all system activities and user actions{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="panel" style="margin-bottom: 20px; padding: 14px 20px;">
+    <form method="GET" action="{{ url_for('audit_logs') }}" class="filter-bar">
+        <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" name="search" class="form-control" placeholder="Search logs..." value="{{ search }}">
+        </div>
+        <select name="user" class="form-control">
+            <option value="">All Users</option>
+            {% for u in all_users %}
+            <option value="{{ u.id }}" {% if user_filter == u.id|string %}selected{% endif %}>{{ u.username }}</option>
+            {% endfor %}
+        </select>
+        <select name="action" class="form-control" style="min-width: 150px;">
+            <option value="">All Actions</option>
+            <option value="Login" {% if action_filter == 'Login' %}selected{% endif %}>Login</option>
+            <option value="Logout" {% if action_filter == 'Logout' %}selected{% endif %}>Logout</option>
+            <option value="Failed Login" {% if action_filter == 'Failed Login' %}selected{% endif %}>Failed Login</option>
+            <option value="File" {% if action_filter == 'File' %}selected{% endif %}>File Actions</option>
+            <option value="Protected Object" {% if action_filter == 'Protected Object' %}selected{% endif %}>Protected Objects</option>
+            <option value="User" {% if action_filter == 'User' %}selected{% endif %}>User Management</option>
+            <option value="Permission" {% if action_filter == 'Permission' %}selected{% endif %}>Permissions</option>
+            <option value="Alert" {% if action_filter == 'Alert' %}selected{% endif %}>Alert Actions</option>
+            <option value="Password" {% if action_filter == 'Password' %}selected{% endif %}>Password Changes</option>
+        </select>
+        <select name="status" class="form-control">
+            <option value="">All Status</option>
+            <option value="Success" {% if status_filter == 'Success' %}selected{% endif %}>Success</option>
+            <option value="Failed" {% if status_filter == 'Failed' %}selected{% endif %}>Failed</option>
+        </select>
+        <select name="date" class="form-control">
+            <option value="">All Time</option>
+            <option value="Today" {% if date_filter == 'Today' %}selected{% endif %}>Today</option>
+            <option value="Yesterday" {% if date_filter == 'Yesterday' %}selected{% endif %}>Yesterday</option>
+            <option value="Last 7 Days" {% if date_filter == 'Last 7 Days' %}selected{% endif %}>Last 7 Days</option>
+            <option value="Last 30 Days" {% if date_filter == 'Last 30 Days' %}selected{% endif %}>Last 30 Days</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+        {% if search or user_filter or action_filter or status_filter or date_filter %}
+        <a href="{{ url_for('audit_logs') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-xmark"></i></a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-clipboard-list" style="color: var(--accent-purple);"></i> Audit Logs ({{ total }})</h3>
+        <a href="{{ url_for('export_csv', report_type='audit_logs') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-download"></i> Export CSV</a>
+    </div>
+
+    {% if logs %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Description</th>
+                <th>IP Address</th>
+                <th>Status</th>
+                <th>Date & Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="color: var(--text-muted);">#{{ log.id }}</td>
+                <td><i class="fa-regular fa-user" style="margin-right: 4px; color: var(--text-muted);"></i> {{ log.user_name or 'System' }}</td>
+                <td>
+                    {% if 'Login' in log.action %}<span style="color: var(--accent-cyan);"><i class="fa-solid fa-right-to-bracket" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% elif 'Logout' in log.action %}<span style="color: var(--text-muted);"><i class="fa-solid fa-right-from-bracket" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% elif 'Failed' in log.action %}<span style="color: var(--danger);"><i class="fa-solid fa-xmark" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% elif 'Alert' in log.action %}<span style="color: var(--warning);"><i class="fa-solid fa-bell" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% elif 'File' in log.action %}<span style="color: var(--info);"><i class="fa-solid fa-file" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% elif 'Permission' in log.action %}<span style="color: var(--accent-amber);"><i class="fa-solid fa-key" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% elif 'User' in log.action %}<span style="color: var(--accent-purple);"><i class="fa-solid fa-user" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% elif 'Protected' in log.action or 'Monitoring' in log.action %}<span style="color: var(--success);"><i class="fa-solid fa-shield-halved" style="margin-right: 3px; font-size: 0.75em;"></i>{{ log.action }}</span>
+                    {% else %}<span>{{ log.action }}</span>{% endif %}
+                </td>
+                <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);" title="{{ log.description }}">{{ log.description or '—' }}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);"><code>{{ log.ip_address or 'N/A' }}</code></td>
+                <td><span class="badge badge-{{ log.status|lower }}">{{ log.status }}</span></td>
+                <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-muted);">{{ log.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination-info">Showing {{ (page - 1) * per_page + 1 }} to {{ [page * per_page, total]|min }} of {{ total }}</div>
+        <div class="pagination-controls">
+            {% if page > 1 %}
+            <a href="{{ url_for('audit_logs', page=page-1, search=search, user=user_filter, action=action_filter, status=status_filter, date=date_filter) }}" class="page-btn"><i class="fa-solid fa-chevron-left" style="font-size: 0.7rem;"></i></a>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}<span class="page-btn active">{{ p }}</span>
+                {% elif p <= 3 or p > total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                <a href="{{ url_for('audit_logs', page=p, search=search, user=user_filter, action=action_filter, status=status_filter, date=date_filter) }}" class="page-btn">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page < total_pages %}
+            <a href="{{ url_for('audit_logs', page=page+1, search=search, user=user_filter, action=action_filter, status=status_filter, date=date_filter) }}" class="page-btn"><i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i></a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <h4>No Audit Logs</h4>
+        <p>System activities will be recorded here automatically.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

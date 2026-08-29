@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SecureTrack</title>
+    <meta name="description" content="SecureTrack Login - File Access Monitoring System">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-body">
+
+    <div class="login-container">
+        <div class="login-header">
+            <img src="{{ url_for('static', filename='img/logo.jpg') }}" alt="SecureTrack Logo" class="login-img-logo">
+            <h2>SecureTrack</h2>
+            <p>File Access Monitoring &amp; Object Protection System</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash-message flash-{{ category }}">
+                {% if category == 'danger' %}<i class="fa-solid fa-circle-exclamation"></i>
+                {% elif category == 'success' %}<i class="fa-solid fa-circle-check"></i>
+                {% endif %}
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}" class="login-form">
+            <div class="form-group">
+                <label for="login_id"><i class="fa-regular fa-user" style="margin-right: 5px;"></i> Email or Username</label>
+                <input type="text" id="login_id" name="login_id" class="form-control" required placeholder="Enter email or username" autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="fa-solid fa-lock" style="margin-right: 5px;"></i> Password</label>
+                <input type="password" id="password" name="password" class="form-control" required placeholder="Enter your password" autocomplete="current-password">
+            </div>
+
+            <div class="login-extras">
+                <label>
+                    <input type="checkbox" name="remember_me" value="1"> Remember me
+                </label>
+                <a href="{{ url_for('forgot_password') }}">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-primary"><i class="fa-solid fa-right-to-bracket" style="margin-right: 6px;"></i> Sign In</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 24px; font-size: 0.75rem; color: var(--text-muted);">
+            &copy; 2024 SecureTrack. All rights reserved.
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Reports{% endblock %}
+{% block page_subtitle %}Generate and export system reports{% endblock %}
+
+{% block content %}
+<!-- Summary Stats -->
+<div class="summary-row">
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--info-dim); color: var(--info);"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="summary-data"><h4>{{ total_objects }}</h4><p>Protected Objects</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--success-dim); color: var(--success);"><i class="fa-solid fa-file-waveform"></i></div>
+        <div class="summary-data"><h4>{{ total_events }}</h4><p>File Events</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--danger-dim); color: var(--danger);"><i class="fa-solid fa-bell"></i></div>
+        <div class="summary-data"><h4>{{ total_alerts }}</h4><p>Total Alerts</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--accent-purple-dim); color: var(--accent-purple);"><i class="fa-solid fa-clipboard-list"></i></div>
+        <div class="summary-data"><h4>{{ total_logs }}</h4><p>Audit Logs</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--accent-cyan-dim); color: var(--accent-cyan);"><i class="fa-solid fa-users"></i></div>
+        <div class="summary-data"><h4>{{ total_users }}</h4><p>Total Users</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--success-dim); color: var(--success);"><i class="fa-solid fa-check-double"></i></div>
+        <div class="summary-data"><h4>{{ resolved_alerts }}</h4><p>Resolved Alerts</p></div>
+    </div>
+</div>
+
+<div class="dashboard-panels">
+    <!-- Events by Type -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="fa-solid fa-chart-bar" style="color: var(--accent-cyan);"></i> Events by Type</h3>
+        </div>
+        {% if events_by_type %}
+        <table class="data-table">
+            <thead><tr><th>Event Type</th><th>Count</th><th>Distribution</th></tr></thead>
+            <tbody>
+                {% for e in events_by_type %}
+                <tr>
+                    <td><strong>{{ e.event_type }}</strong></td>
+                    <td>{{ e.cnt }}</td>
+                    <td>
+                        <div style="background: var(--bg-input); border-radius: 4px; height: 8px; width: 100%; max-width: 200px;">
+                            <div style="background: var(--accent-cyan); border-radius: 4px; height: 100%; width: {{ (e.cnt / total_events * 100) if total_events > 0 else 0 }}%;"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state"><p>No events recorded yet.</p></div>
+        {% endif %}
+    </div>
+
+    <!-- Alerts by Severity -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="fa-solid fa-chart-pie" style="color: var(--danger);"></i> Alerts by Severity</h3>
+        </div>
+        {% if alerts_by_severity %}
+        <table class="data-table">
+            <thead><tr><th>Severity</th><th>Count</th><th>Distribution</th></tr></thead>
+            <tbody>
+                {% for a in alerts_by_severity %}
+                <tr>
+                    <td><span class="badge badge-{{ a.severity|lower }}">{{ a.severity }}</span></td>
+                    <td>{{ a.cnt }}</td>
+                    <td>
+                        <div style="background: var(--bg-input); border-radius: 4px; height: 8px; width: 100%; max-width: 200px;">
+                            <div style="background: {% if a.severity == 'Critical' %}var(--danger){% elif a.severity == 'High' %}var(--accent-red){% elif a.severity == 'Medium' %}var(--warning){% else %}var(--info){% endif %}; border-radius: 4px; height: 100%; width: {{ (a.cnt / total_alerts * 100) if total_alerts > 0 else 0 }}%;"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state"><p>No alerts recorded yet.</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Logins & Export -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+    <div class="panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="fa-solid fa-right-to-bracket" style="color: var(--accent-cyan);"></i> Recent Login Activity</h3>
+        </div>
+        {% if recent_logins %}
+        <table class="data-table">
+            <thead><tr><th>User</th><th>Action</th><th>IP</th><th>Time</th></tr></thead>
+            <tbody>
+                {% for l in recent_logins %}
+                <tr>
+                    <td>{{ l.user_name or 'Unknown' }}</td>
+                    <td>
+                        {% if l.action == 'Login' %}<span style="color: var(--success);"><i class="fa-solid fa-circle-check" style="margin-right: 3px;"></i>Login</span>
+                        {% elif l.action == 'Failed Login' %}<span style="color: var(--danger);"><i class="fa-solid fa-circle-xmark" style="margin-right: 3px;"></i>Failed</span>
+                        {% else %}<span style="color: var(--text-muted);"><i class="fa-solid fa-right-from-bracket" style="margin-right: 3px;"></i>Logout</span>{% endif %}
+                    </td>
+                    <td style="font-size: 0.8rem;"><code>{{ l.ip_address or 'N/A' }}</code></td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">{{ l.created_at.strftime('%m/%d %I:%M %p') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state"><p>No login activity yet.</p></div>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h3 class="panel-title"><i class="fa-solid fa-download" style="color: var(--success);"></i> Export Reports</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; padding: 8px 0;">
+            <a href="{{ url_for('export_csv', report_type='file_events') }}" class="btn btn-outline" style="justify-content: space-between;">
+                <span><i class="fa-solid fa-file-waveform" style="margin-right: 8px; color: var(--info);"></i> File Events</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">CSV</span>
+            </a>
+            <a href="{{ url_for('export_csv', report_type='audit_logs') }}" class="btn btn-outline" style="justify-content: space-between;">
+                <span><i class="fa-solid fa-clipboard-list" style="margin-right: 8px; color: var(--accent-purple);"></i> Audit Logs</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">CSV</span>
+            </a>
+            <a href="{{ url_for('export_csv', report_type='alerts') }}" class="btn btn-outline" style="justify-content: space-between;">
+                <span><i class="fa-solid fa-bell" style="margin-right: 8px; color: var(--danger);"></i> Security Alerts</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">CSV</span>
+            </a>
+            <a href="{{ url_for('export_csv', report_type='protected_objects') }}" class="btn btn-outline" style="justify-content: space-between;">
+                <span><i class="fa-solid fa-shield-halved" style="margin-right: 8px; color: var(--success);"></i> Protected Objects</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">CSV</span>
+            </a>
+            <a href="{{ url_for('export_csv', report_type='user_activity') }}" class="btn btn-outline" style="justify-content: space-between;">
+                <span><i class="fa-solid fa-users" style="margin-right: 8px; color: var(--accent-cyan);"></i> User Activity</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">CSV</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

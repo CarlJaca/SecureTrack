@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Third-Party Users{% endblock %}
+{% block page_subtitle %}Manage third-party user permissions and monitor their activities{% endblock %}
+
+{% block content %}
+<!-- Grant Permission Form -->
+<div class="panel" style="margin-bottom: 20px;">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-key" style="color: var(--accent-amber);"></i> Grant Permission</h3>
+    </div>
+    <form method="POST" action="{{ url_for('grant_permission') }}">
+        <div class="form-inline">
+            <div class="form-group">
+                <label for="grant_user">Third-Party User</label>
+                <select id="grant_user" name="user_id" class="form-control" required>
+                    <option value="">Select a user...</option>
+                    {% for user in tp_users %}
+                    <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="grant_object">Protected Object</label>
+                <select id="grant_object" name="object_id" class="form-control" required>
+                    <option value="">Select an object...</option>
+                    {% for obj in objects %}
+                    <option value="{{ obj.id }}">{{ obj.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="grant_type">Permission</label>
+                <select id="grant_type" name="permission_type" class="form-control">
+                    <option value="View">View</option>
+                    <option value="Access">Access</option>
+                    <option value="Download">Download</option>
+                    <option value="Modify">Modify</option>
+                    <option value="Delete">Delete</option>
+                </select>
+            </div>
+            <div class="form-group" style="padding-top: 0;">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Grant</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Third-Party Users -->
+{% if tp_users %}
+{% for user in tp_users %}
+<div class="panel" style="margin-bottom: 16px;">
+    <div class="panel-header">
+        <h3 class="panel-title">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="avatar" style="width: 32px; height: 32px; font-size: 0.7rem; background: var(--accent-amber-dim); color: var(--accent-amber);">
+                    <i class="fa-regular fa-user"></i>
+                </div>
+                {{ user.username }}
+                <span class="badge badge-tp">Third-Party</span>
+                <span class="badge badge-{{ user.status|lower }}">{{ user.status }}</span>
+            </div>
+        </h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ user.email }}</span>
+    </div>
+
+    <!-- Activity Stats -->
+    <div class="activity-stats">
+        <div class="activity-stat">
+            <i class="fa-solid fa-chart-line" style="color: var(--info);"></i>
+            <strong>{{ user.total_activities }}</strong> <span>Total Activities</span>
+        </div>
+        <div class="activity-stat">
+            <i class="fa-solid fa-eye" style="color: var(--success);"></i>
+            <strong>{{ user.files_accessed }}</strong> <span>Viewed</span>
+        </div>
+        <div class="activity-stat">
+            <i class="fa-solid fa-download" style="color: var(--info);"></i>
+            <strong>{{ user.files_downloaded }}</strong> <span>Downloaded</span>
+        </div>
+        <div class="activity-stat">
+            <i class="fa-solid fa-pen" style="color: var(--warning);"></i>
+            <strong>{{ user.files_modified }}</strong> <span>Modified</span>
+        </div>
+        <div class="activity-stat">
+            <i class="fa-solid fa-bell" style="color: var(--danger);"></i>
+            <strong>{{ user.alerts_generated }}</strong> <span>Alerts</span>
+        </div>
+        <div class="activity-stat" style="margin-left: auto;">
+            <i class="fa-regular fa-clock" style="color: var(--text-muted);"></i>
+            <span>Last Active:</span>
+            <strong>{{ user.last_activity_time.strftime('%Y-%m-%d %I:%M %p') if user.last_activity_time else 'Never' }}</strong>
+        </div>
+    </div>
+
+    {% if user.permissions %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Object</th>
+                <th>Path</th>
+                <th>Permission</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for perm in user.permissions %}
+            <tr>
+                <td><i class="fa-regular fa-file" style="margin-right: 5px; color: var(--info);"></i> <strong>{{ perm.object_name }}</strong></td>
+                <td><code>{{ perm.object_path }}</code></td>
+                <td>
+                    {% if perm.permission_type == 'View' %}<span class="badge badge-low"><i class="fa-solid fa-eye" style="margin-right: 3px;"></i> View</span>
+                    {% elif perm.permission_type == 'Access' %}<span class="badge" style="background: var(--accent-cyan-dim); color: var(--accent-cyan);"><i class="fa-solid fa-key" style="margin-right: 3px;"></i> Access</span>
+                    {% elif perm.permission_type == 'Download' %}<span class="badge badge-medium"><i class="fa-solid fa-download" style="margin-right: 3px;"></i> Download</span>
+                    {% elif perm.permission_type == 'Modify' %}<span class="badge badge-high"><i class="fa-solid fa-pen" style="margin-right: 3px;"></i> Modify</span>
+                    {% elif perm.permission_type == 'Delete' %}<span class="badge badge-critical"><i class="fa-solid fa-trash" style="margin-right: 3px;"></i> Delete</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('revoke_permission', perm_id=perm.id) }}" style="display:inline;" onsubmit="return confirm('Revoke this permission?')">
+                        <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-xmark"></i> Revoke</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">
+        <i class="fa-solid fa-lock" style="margin-right: 5px;"></i> No permissions granted to this user.
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="panel">
+    <div class="empty-state">
+        <i class="fa-solid fa-users"></i>
+        <h4>No Third-Party Users</h4>
+        <p>Create users with the "Third-Party User" role to manage their access here.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

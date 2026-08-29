@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Authorized Files{% endblock %}
+{% block page_subtitle %}Files and folders you have been granted access to{% endblock %}
+
+{% block content %}
+<!-- Activity Stats -->
+<div class="summary-row">
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--info-dim); color: var(--info);"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="summary-data"><h4>{{ stats.total }}</h4><p>Total Activities</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--success-dim); color: var(--success);"><i class="fa-solid fa-eye"></i></div>
+        <div class="summary-data"><h4>{{ stats.accessed }}</h4><p>Files Viewed</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--accent-cyan-dim); color: var(--accent-cyan);"><i class="fa-solid fa-download"></i></div>
+        <div class="summary-data"><h4>{{ stats.downloaded }}</h4><p>Files Downloaded</p></div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--warning-dim); color: var(--warning);"><i class="fa-solid fa-pen"></i></div>
+        <div class="summary-data"><h4>{{ stats.modified }}</h4><p>Files Modified</p></div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-folder-open" style="color: var(--accent-cyan);"></i> My Authorized Files</h3>
+    </div>
+
+    {% if permissions %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Object</th>
+                <th>Type</th>
+                <th>Path</th>
+                <th>Permission</th>
+                <th>Status</th>
+                <th>Integrity</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in permissions %}
+            <tr>
+                <td>
+                    <i class="{% if p.object_type == 'File' %}fa-regular fa-file{% else %}fa-regular fa-folder{% endif %}" style="margin-right: 5px; color: var(--info);"></i>
+                    <strong>{{ p.object_name }}</strong>
+                </td>
+                <td>{{ p.object_type }}</td>
+                <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ p.object_path }}">
+                    <code>{{ p.object_path }}</code>
+                </td>
+                <td>
+                    {% if p.permission_type == 'View' %}<span class="badge badge-low"><i class="fa-solid fa-eye" style="margin-right: 3px;"></i> View</span>
+                    {% elif p.permission_type == 'Download' %}<span class="badge badge-medium"><i class="fa-solid fa-download" style="margin-right: 3px;"></i> Download</span>
+                    {% elif p.permission_type == 'Modify' %}<span class="badge badge-high"><i class="fa-solid fa-pen" style="margin-right: 3px;"></i> Modify</span>
+                    {% else %}<span class="badge">{{ p.permission_type }}</span>{% endif %}
+                </td>
+                <td><span class="badge badge-{{ p.monitoring_status|lower }}">{{ p.monitoring_status }}</span></td>
+                <td>
+                    <span class="integrity-indicator">
+                        <span class="integrity-dot {{ p.integrity_status|lower }}"></span>
+                        {{ p.integrity_status }}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <a href="{{ url_for('view_file_detail', obj_id=p.protected_object_id) }}" class="btn btn-sm btn-info" title="View"><i class="fa-solid fa-eye"></i></a>
+                        {% if p.permission_type in ['Download', 'Modify'] %}
+                        <a href="{{ url_for('download_file', obj_id=p.protected_object_id) }}" class="btn btn-sm btn-success" title="Download"><i class="fa-solid fa-download"></i></a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-lock"></i>
+        <h4>No Authorized Files</h4>
+        <p>You have not been granted access to any files yet. Contact your administrator.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

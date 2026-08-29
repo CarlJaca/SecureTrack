@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title|default('Dashboard') }}{% endblock %} - SecureTrack</title>
+    <meta name="description" content="SecureTrack - File Access Monitoring & Object Protection System">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="{{ url_for('static', filename='img/logo.jpg') }}" alt="SecureTrack Logo" class="app-logo">
+            <div>
+                <h2>SecureTrack</h2>
+                <span style="font-size: 0.63rem; color: var(--text-muted); letter-spacing: 0.3px;">MONITORING SYSTEM</span>
+            </div>
+        </div>
+        <ul class="nav-links">
+            {% if session.get('role') == 'Administrator' %}
+            <li class="nav-section-label">Main</li>
+            <li class="nav-item"><a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+            <li class="nav-item"><a href="{{ url_for('protected_objects') }}" class="nav-link {% if request.endpoint == 'protected_objects' %}active{% endif %}"><i class="fa-solid fa-shield-halved"></i> Protected Objects</a></li>
+            <li class="nav-item"><a href="{{ url_for('file_events') }}" class="nav-link {% if request.endpoint == 'file_events' %}active{% endif %}"><i class="fa-solid fa-file-waveform"></i> File Events</a></li>
+            <li class="nav-section-label">Security</li>
+            <li class="nav-item"><a href="{{ url_for('security_alerts') }}" class="nav-link {% if request.endpoint == 'security_alerts' %}active{% endif %}"><i class="fa-solid fa-bell"></i> Security Alerts</a></li>
+            <li class="nav-item"><a href="{{ url_for('audit_logs') }}" class="nav-link {% if request.endpoint == 'audit_logs' %}active{% endif %}"><i class="fa-solid fa-clipboard-list"></i> Audit Logs</a></li>
+            <li class="nav-item"><a href="{{ url_for('file_integrity') }}" class="nav-link {% if request.endpoint == 'file_integrity' %}active{% endif %}"><i class="fa-solid fa-fingerprint"></i> File Integrity</a></li>
+            <li class="nav-section-label">Management</li>
+            <li class="nav-item"><a href="{{ url_for('users') }}" class="nav-link {% if request.endpoint == 'users' %}active{% endif %}"><i class="fa-solid fa-users-gear"></i> Users</a></li>
+            <li class="nav-item"><a href="{{ url_for('third_party_users') }}" class="nav-link {% if request.endpoint == 'third_party_users' %}active{% endif %}"><i class="fa-solid fa-user-shield"></i> Third-Party Users</a></li>
+            <li class="nav-item"><a href="{{ url_for('reports') }}" class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Reports</a></li>
+            <li class="nav-section-label">System</li>
+            <li class="nav-item"><a href="{{ url_for('settings') }}" class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}"><i class="fa-solid fa-gear"></i> Settings</a></li>
+
+            {% else %}
+            <li class="nav-section-label">My Account</li>
+            <li class="nav-item"><a href="{{ url_for('my_files') }}" class="nav-link {% if request.endpoint == 'my_files' %}active{% endif %}"><i class="fa-solid fa-folder-open"></i> Authorized Files</a></li>
+            <li class="nav-item"><a href="{{ url_for('my_activity') }}" class="nav-link {% if request.endpoint == 'my_activity' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i> My Activity</a></li>
+            <li class="nav-item"><a href="{{ url_for('settings') }}" class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}"><i class="fa-solid fa-gear"></i> Profile</a></li>
+            {% endif %}
+        </ul>
+        <div class="sidebar-footer">
+            <div class="avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                <i class="fa-regular fa-user"></i>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ session.get('username', 'User') }}</div>
+                <div style="font-size: 0.67rem; color: var(--text-muted);">{{ session.get('role', '') }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" style="color: var(--text-muted); font-size: 0.9rem; padding: 4px;" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="topbar">
+            <div class="page-title">
+                <h1>{% block page_title %}{{ title|default('Dashboard') }}{% endblock %}</h1>
+                <p>{% block page_subtitle %}System overview{% endblock %}</p>
+            </div>
+            <div class="topbar-right">
+                {% if session.get('role') == 'Administrator' %}
+                <a href="{{ url_for('security_alerts') }}" class="notification-bell">
+                    <i class="fa-regular fa-bell"></i>
+                    {% if active_alert_count > 0 %}
+                    <span class="badge-count">{{ active_alert_count }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+                <div class="user-profile">
+                    <div class="avatar">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">{{ session.get('username', 'User') }}</span>
+                        <span class="user-role">{{ session.get('role', '') }}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash-message flash-{{ category }}" id="flash-{{ loop.index }}">
+                    {% if category == 'danger' %}<i class="fa-solid fa-circle-exclamation"></i>
+                    {% elif category == 'success' %}<i class="fa-solid fa-circle-check"></i>
+                    {% endif %}
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+
+        <div class="page-footer">
+            &copy; 2024 SecureTrack &mdash; File Access Monitoring &amp; Object Protection System
+        </div>
+    </main>
+
+    <script>
+    // Auto-dismiss flash messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.flash-message').forEach(function(msg) {
+            setTimeout(function() {
+                msg.style.transition = 'opacity 0.4s, transform 0.4s';
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateY(-10px)';
+                setTimeout(function() { msg.remove(); }, 400);
+            }, 5000);
+        });
+    });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

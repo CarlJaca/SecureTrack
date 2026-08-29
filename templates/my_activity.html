@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block page_title %}My Activity{% endblock %}
+{% block page_subtitle %}Your personal activity history within the system{% endblock %}
+
+{% block content %}
+<div class="panel" style="margin-bottom: 20px;">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-file-waveform" style="color: var(--accent-cyan);"></i> File Activity</h3>
+    </div>
+
+    {% if activities %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Object</th>
+                <th>Event Type</th>
+                <th>File Path</th>
+                <th>Risk Level</th>
+                <th>Date & Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in activities %}
+            <tr>
+                <td><i class="fa-regular fa-file" style="margin-right: 5px; color: var(--text-muted);"></i> {{ a.object_name or 'Unknown' }}</td>
+                <td>
+                    {% if a.event_type == 'Viewed' %}<span style="color: var(--accent-cyan);"><i class="fa-solid fa-eye" style="margin-right: 3px; font-size: 0.75em;"></i>Viewed</span>
+                    {% elif a.event_type == 'Downloaded' %}<span style="color: var(--info);"><i class="fa-solid fa-download" style="margin-right: 3px; font-size: 0.75em;"></i>Downloaded</span>
+                    {% elif a.event_type == 'Modified' %}<span style="color: var(--warning);"><i class="fa-solid fa-pen" style="margin-right: 3px; font-size: 0.75em;"></i>Modified</span>
+                    {% elif a.event_type == 'Accessed' %}<span style="color: var(--success);"><i class="fa-solid fa-key" style="margin-right: 3px; font-size: 0.75em;"></i>Accessed</span>
+                    {% else %}<span>{{ a.event_type }}</span>{% endif %}
+                </td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ a.file_path }}">
+                    <code>{{ a.file_path }}</code>
+                </td>
+                <td><span class="badge badge-{{ a.risk_level|lower }}">{{ a.risk_level }}</span></td>
+                <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-muted);">{{ a.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination-info">Page {{ page }} of {{ total_pages }}</div>
+        <div class="pagination-controls">
+            {% if page > 1 %}<a href="{{ url_for('my_activity', page=page-1) }}" class="page-btn"><i class="fa-solid fa-chevron-left" style="font-size: 0.7rem;"></i></a>{% endif %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}<span class="page-btn active">{{ p }}</span>
+                {% elif p <= 3 or p > total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                <a href="{{ url_for('my_activity', page=p) }}" class="page-btn">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page < total_pages %}<a href="{{ url_for('my_activity', page=page+1) }}" class="page-btn"><i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i></a>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <h4>No Activity Yet</h4>
+        <p>Your file access activities will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if audit_activities %}
+<div class="panel">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-clipboard-list" style="color: var(--accent-purple);"></i> System Activity</h3>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Date & Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in audit_activities %}
+            <tr>
+                <td><strong>{{ a.action }}</strong></td>
+                <td style="color: var(--text-secondary);">{{ a.description or '—' }}</td>
+                <td><span class="badge badge-{{ a.status|lower }}">{{ a.status }}</span></td>
+                <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-muted);">{{ a.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

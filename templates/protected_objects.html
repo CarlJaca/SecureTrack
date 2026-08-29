@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Protected Objects{% endblock %}
+{% block page_subtitle %}Manage files and folders monitored by SecureTrack{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="panel" style="margin-bottom: 20px; padding: 14px 20px;">
+    <form method="GET" action="{{ url_for('protected_objects') }}" class="filter-bar">
+        <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" name="search" class="form-control" placeholder="Search by name or path..." value="{{ search }}">
+        </div>
+        <select name="type" class="form-control">
+            <option value="">All Types</option>
+            <option value="File" {% if type_filter == 'File' %}selected{% endif %}>File</option>
+            <option value="Folder" {% if type_filter == 'Folder' %}selected{% endif %}>Folder</option>
+        </select>
+        <select name="status" class="form-control">
+            <option value="">All Status</option>
+            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+            <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+        {% if search or type_filter or status_filter %}
+        <a href="{{ url_for('protected_objects') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-xmark"></i> Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-shield-halved" style="color: var(--info);"></i> All Protected Objects ({{ objects|length }})</h3>
+        <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('active')">
+            <i class="fa-solid fa-plus"></i> Add Object
+        </button>
+    </div>
+
+    {% if objects %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Path</th>
+                <th>Type</th>
+                <th>Monitoring</th>
+                <th>Integrity</th>
+                <th>Added</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for obj in objects %}
+            <tr>
+                <td>
+                    <i class="{% if obj.object_type == 'File' %}fa-regular fa-file{% else %}fa-regular fa-folder{% endif %}" style="margin-right: 6px; color: var(--info);"></i>
+                    <strong>{{ obj.name }}</strong>
+                </td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ obj.path }}">
+                    <code>{{ obj.path }}</code>
+                </td>
+                <td>{{ obj.object_type }}</td>
+                <td><span class="badge badge-{{ obj.monitoring_status|lower }}">{{ obj.monitoring_status }}</span></td>
+                <td>
+                    <span class="integrity-indicator">
+                        <span class="integrity-dot {{ obj.integrity_status|lower }}"></span>
+                        {{ obj.integrity_status }}
+                    </span>
+                </td>
+                <td style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">{{ obj.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <div class="btn-group">
+                        <form method="POST" action="{{ url_for('toggle_protected_object', obj_id=obj.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm {% if obj.monitoring_status == 'Active' %}btn-warning{% else %}btn-success{% endif %}" title="{% if obj.monitoring_status == 'Active' %}Stop{% else %}Start{% endif %} Monitoring">
+                                <i class="fa-solid {% if obj.monitoring_status == 'Active' %}fa-pause{% else %}fa-play{% endif %}"></i>
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('delete_protected_object', obj_id=obj.id) }}" style="display:inline;" onsubmit="return confirm('Delete this protected object? This will also remove all related events and alerts.')">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-regular fa-folder-open"></i>
+        <h4>No Protected Objects</h4>
+        <p>Add files or folders to start monitoring them for unauthorized changes.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal" style="max-width: 540px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-plus" style="margin-right: 8px; color: var(--accent-cyan);"></i> Add Protected Object</h3>
+            <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('active')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('add_protected_object') }}" enctype="multipart/form-data" id="addForm">
+
+            <!-- Upload Zone -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-upload" style="margin-right: 5px;"></i> Upload File</label>
+                <div class="drop-zone" id="dropZone"
+                     onclick="document.getElementById('fileInput').click()"
+                     ondragover="event.preventDefault(); this.classList.add('active')"
+                     ondragleave="this.classList.remove('active')"
+                     ondrop="event.preventDefault(); document.getElementById('fileInput').files = event.dataTransfer.files; handleFileSelect(); this.classList.remove('active')">
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--accent-cyan); margin-bottom: 8px; display: block;"></i>
+                    <p style="font-size: 0.88rem; font-weight: 500; margin-bottom: 4px;" id="dropText">Click to browse or drag & drop a file</p>
+                    <p style="font-size: 0.73rem; color: var(--text-muted);">File will be copied to the SecureTrack monitored folder</p>
+                </div>
+                <input type="file" id="fileInput" name="file" style="display: none;" onchange="handleFileSelect()">
+            </div>
+
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: -6px 0 12px 0;">
+                &mdash; or enter path manually &mdash;
+            </div>
+
+            <div class="form-group">
+                <label for="manual_path">File or Folder Path</label>
+                <input type="text" id="manual_path" name="path" class="form-control" placeholder="e.g. C:\Users\Documents\Finance">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="object_type">Object Type</label>
+                    <select id="object_type" name="object_type" class="form-control">
+                        <option value="File">File</option>
+                        <option value="Folder">Folder</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="name">Object Name</label>
+                    <input type="text" id="obj_name" name="name" class="form-control" placeholder="e.g. Financial Report">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('addModal').classList.remove('active')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-shield-halved"></i> Protect Object</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function handleFileSelect() {
+    var fileInput = document.getElementById('fileInput');
+    var nameInput = document.getElementById('obj_name');
+    var dropText = document.getElementById('dropText');
+    var typeSelect = document.getElementById('object_type');
+
+    if (fileInput.files.length > 0) {
+        var fileName = fileInput.files[0].name;
+        dropText.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 5px;"></i> ' + fileName;
+        typeSelect.value = "File";
+        if (!nameInput.value) {
+            nameInput.value = fileName;
+        }
+    }
+}
+</script>
+{% endblock %}

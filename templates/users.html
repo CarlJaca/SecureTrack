@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}Manage system users and their access levels{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-users-gear" style="color: var(--accent-cyan);"></i> All Users ({{ users|length }})</h3>
+        <button class="btn btn-primary" onclick="document.getElementById('addUserModal').classList.add('active')">
+            <i class="fa-solid fa-user-plus"></i> Add User
+        </button>
+    </div>
+
+    {% if users %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="avatar" style="width: 32px; height: 32px; font-size: 0.7rem;
+                            {% if user.role == 'Administrator' %}background: var(--accent-cyan-dim); color: var(--accent-cyan);
+                            {% else %}background: var(--accent-amber-dim); color: var(--accent-amber);{% endif %}">
+                            <i class="fa-regular fa-user"></i>
+                        </div>
+                        <strong>{{ user.username }}</strong>
+                    </div>
+                </td>
+                <td style="color: var(--text-secondary);">{{ user.email }}</td>
+                <td>
+                    {% if user.role == 'Administrator' %}
+                    <span class="badge" style="background: var(--accent-cyan-dim); color: var(--accent-cyan);">Admin</span>
+                    {% else %}
+                    <span class="badge badge-tp">Third-Party</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-{{ user.status|lower }}">{{ user.status }}</span></td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">{{ user.last_login.strftime('%Y-%m-%d %I:%M %p') if user.last_login else 'Never' }}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    {% if user.id != session.get('user_id') %}
+                    <div class="btn-group">
+                        <form method="POST" action="{{ url_for('toggle_user', user_id=user.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm {% if user.status == 'Active' %}btn-warning{% else %}btn-success{% endif %}" title="{% if user.status == 'Active' %}Deactivate{% else %}Activate{% endif %}">
+                                <i class="fa-solid {% if user.status == 'Active' %}fa-user-slash{% else %}fa-user-check{% endif %}"></i>
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display:inline;" onsubmit="return confirm('Delete this user permanently?')">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <span style="color: var(--text-muted); font-size: 0.78rem;">Current User</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-users"></i>
+        <h4>No Users</h4>
+        <p>Create users to manage system access.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="addUserModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-plus" style="margin-right: 8px; color: var(--accent-cyan);"></i> Add New User</h3>
+            <button class="modal-close" onclick="document.getElementById('addUserModal').classList.remove('active')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('add_user') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control" required placeholder="e.g. john_doe">
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-control" required placeholder="e.g. john@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" required placeholder="Minimum 6 characters" minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="role">Role</label>
+                <select id="role" name="role" class="form-control">
+                    <option value="Third-Party User">Third-Party User</option>
+                    <option value="Administrator">Administrator</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('addUserModal').classList.remove('active')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

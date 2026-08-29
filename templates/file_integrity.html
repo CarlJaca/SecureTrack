@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block page_title %}File Integrity{% endblock %}
+{% block page_subtitle %}SHA-256 hash verification for all protected file objects{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="summary-row">
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--success-dim); color: var(--success);"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="summary-data">
+            <h4>{{ integrity_counts.verified }}</h4>
+            <p>Verified</p>
+        </div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--danger-dim); color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="summary-data">
+            <h4>{{ integrity_counts.changed }}</h4>
+            <p>Changed</p>
+        </div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: rgba(100,116,139,0.12); color: var(--text-muted);"><i class="fa-solid fa-question"></i></div>
+        <div class="summary-data">
+            <h4>{{ integrity_counts.unknown }}</h4>
+            <p>Unknown</p>
+        </div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon" style="background: var(--info-dim); color: var(--info);"><i class="fa-solid fa-fingerprint"></i></div>
+        <div class="summary-data">
+            <h4>{{ integrity_counts.total }}</h4>
+            <p>Total Objects</p>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-fingerprint" style="color: var(--accent-cyan);"></i> File Integrity Status</h3>
+    </div>
+
+    {% if objects %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Object</th>
+                <th>Type</th>
+                <th>Path</th>
+                <th>Live Status</th>
+                <th>Original Hash</th>
+                <th>Current Hash</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for obj in objects %}
+            <tr>
+                <td>
+                    <i class="{% if obj.object_type == 'File' %}fa-regular fa-file{% else %}fa-regular fa-folder{% endif %}" style="margin-right: 5px; color: var(--info);"></i>
+                    <strong>{{ obj.name }}</strong>
+                </td>
+                <td>{{ obj.object_type }}</td>
+                <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ obj.path }}"><code>{{ obj.path }}</code></td>
+                <td>
+                    {% if obj.live_match is true %}
+                    <span class="integrity-indicator"><span class="integrity-dot verified"></span> <span style="color: var(--success);">Verified</span></span>
+                    {% elif obj.live_match is false %}
+                    <span class="integrity-indicator"><span class="integrity-dot changed"></span> <span style="color: var(--danger);">Changed</span></span>
+                    {% else %}
+                    <span class="integrity-indicator"><span class="integrity-dot unknown"></span> <span style="color: var(--text-muted);">Unknown</span></span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if obj.original_hash %}
+                    <span class="hash-text" title="{{ obj.original_hash }}">{{ obj.original_hash[:16] }}...</span>
+                    {% else %}<span style="color: var(--text-muted);">—</span>{% endif %}
+                </td>
+                <td>
+                    {% if obj.live_hash %}
+                    <span class="hash-text" title="{{ obj.live_hash }}" {% if obj.live_match is false %}style="color: var(--danger);"{% endif %}>{{ obj.live_hash[:16] }}...</span>
+                    {% else %}<span style="color: var(--text-muted);">—</span>{% endif %}
+                </td>
+                <td>
+                    {% if obj.object_type == 'File' %}
+                    <form method="POST" action="{{ url_for('rehash_object', obj_id=obj.id) }}" style="display:inline;" onsubmit="return confirm('Update the baseline hash for this file? This will mark it as Verified.')">
+                        <button type="submit" class="btn btn-sm btn-info" title="Re-hash baseline"><i class="fa-solid fa-rotate"></i> Re-hash</button>
+                    </form>
+                    {% else %}
+                    <span style="color: var(--text-muted); font-size: 0.78rem;">N/A</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-fingerprint"></i>
+        <h4>No Protected Objects</h4>
+        <p>Add files to start monitoring their integrity.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
