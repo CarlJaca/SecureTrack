@@ -18,7 +18,9 @@
             <option value="Deleted" {% if event_type_filter == 'Deleted' %}selected{% endif %}>Deleted</option>
             <option value="Renamed" {% if event_type_filter == 'Renamed' %}selected{% endif %}>Renamed</option>
             <option value="Moved" {% if event_type_filter == 'Moved' %}selected{% endif %}>Moved</option>
+            <option value="Hidden" {% if event_type_filter == 'Hidden' %}selected{% endif %}>Hidden</option>
             <option value="Viewed" {% if event_type_filter == 'Viewed' %}selected{% endif %}>Viewed</option>
+            <option value="Accessed" {% if event_type_filter == 'Accessed' %}selected{% endif %}>Accessed</option>
             <option value="Downloaded" {% if event_type_filter == 'Downloaded' %}selected{% endif %}>Downloaded</option>
         </select>
         <select name="risk" class="form-control">
@@ -81,6 +83,8 @@
                     {% elif e.event_type == 'Viewed' %}<span style="color: var(--accent-cyan);"><i class="fa-solid fa-eye" style="margin-right: 3px; font-size: 0.75em;"></i>Viewed</span>
                     {% elif e.event_type == 'Moved' %}<span style="color: var(--accent-purple);"><i class="fa-solid fa-arrows-up-down" style="margin-right: 3px; font-size: 0.75em;"></i>Moved</span>
                     {% elif e.event_type == 'Renamed' %}<span style="color: var(--accent-amber);"><i class="fa-solid fa-i-cursor" style="margin-right: 3px; font-size: 0.75em;"></i>Renamed</span>
+                    {% elif e.event_type == 'Hidden' %}<span style="color: var(--danger);"><i class="fa-solid fa-eye-slash" style="margin-right: 3px; font-size: 0.75em;"></i>Hidden</span>
+                    {% elif e.event_type == 'Accessed' %}<span style="color: var(--text-secondary);"><i class="fa-solid fa-door-open" style="margin-right: 3px; font-size: 0.75em;"></i>Accessed</span>
                     {% else %}<span>{{ e.event_type }}</span>{% endif %}
                 </td>
                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ e.file_path }}">

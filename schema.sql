@@ -68,7 +68,7 @@ CREATE TABLE file_events (
     id INT AUTO_INCREMENT PRIMARY KEY,
     protected_object_id INT NOT NULL,
     user_id INT NULL,
-    event_type ENUM('Created', 'Modified', 'Deleted', 'Renamed', 'Moved', 'Viewed', 'Accessed', 'Downloaded') NOT NULL,
+    event_type ENUM('Created', 'Modified', 'Deleted', 'Renamed', 'Moved', 'Viewed', 'Accessed', 'Downloaded', 'Hidden') NOT NULL,
     file_path VARCHAR(512) NOT NULL,
     previous_hash VARCHAR(128) NULL,
     new_hash VARCHAR(128) NULL,

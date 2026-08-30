@@ -76,6 +76,10 @@
                     {% elif e.event_type == 'Modified' %}<span style="color: var(--warning);"><i class="fa-solid fa-pen" style="margin-right: 3px; font-size: 0.75em;"></i>Modified</span>
                     {% elif e.event_type == 'Deleted' %}<span style="color: var(--danger);"><i class="fa-solid fa-trash" style="margin-right: 3px; font-size: 0.75em;"></i>Deleted</span>
                     {% elif e.event_type == 'Created' %}<span style="color: var(--success);"><i class="fa-solid fa-plus" style="margin-right: 3px; font-size: 0.75em;"></i>Created</span>
+                    {% elif e.event_type == 'Moved' %}<span style="color: var(--accent-purple);"><i class="fa-solid fa-arrows-up-down" style="margin-right: 3px; font-size: 0.75em;"></i>Moved</span>
+                    {% elif e.event_type == 'Renamed' %}<span style="color: var(--accent-amber);"><i class="fa-solid fa-i-cursor" style="margin-right: 3px; font-size: 0.75em;"></i>Renamed</span>
+                    {% elif e.event_type == 'Hidden' %}<span style="color: var(--danger);"><i class="fa-solid fa-eye-slash" style="margin-right: 3px; font-size: 0.75em;"></i>Hidden</span>
+                    {% elif e.event_type == 'Accessed' %}<span style="color: var(--text-secondary);"><i class="fa-solid fa-door-open" style="margin-right: 3px; font-size: 0.75em;"></i>Accessed</span>
                     {% else %}<span>{{ e.event_type }}</span>{% endif %}
                 </td>
                 <td><span class="badge badge-{{ e.risk_level|lower }}">{{ e.risk_level }}</span></td>

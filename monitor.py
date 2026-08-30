@@ -9,6 +9,7 @@ Can run as:
 """
 import time
 import os
+import stat
 import hashlib
 import threading
 from watchdog.observers import Observer
@@ -37,6 +38,7 @@ RISK_MAP = {
     'Deleted': 'Critical',
     'Renamed': 'Medium',
     'Moved': 'Medium',
+    'Hidden': 'High',
 }
 
 # Alert severity titles
@@ -46,6 +48,7 @@ ALERT_TITLES = {
     'Deleted': 'Protected File Deleted',
     'Renamed': 'Protected File Renamed',
     'Moved': 'Protected File Moved',
+    'Hidden': 'Protected File Hidden',
 }
 
 
@@ -56,6 +59,7 @@ class SecureTrackHandler(FileSystemEventHandler):
         super().__init__()
         self.last_events = {}  # Debounce: {filepath: timestamp}
         self.debounce_seconds = 2.0
+        self._file_attrs = {}  # Track file attributes: {filepath: {'hidden': bool, 'readonly': bool}}
 
     def _is_debounced(self, filepath):
         """Prevent duplicate events within the debounce window."""
@@ -65,6 +69,58 @@ class SecureTrackHandler(FileSystemEventHandler):
             return True
         self.last_events[filepath] = now
         return False
+
+    def _get_file_attrs(self, filepath):
+        """Get current file attributes (hidden, readonly). Works on Windows and Unix."""
+        try:
+            st = os.stat(filepath)
+            attrs = {}
+            if hasattr(st, 'st_file_attributes'):
+                # Windows: use native file attributes
+                attrs['hidden'] = bool(st.st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
+                attrs['readonly'] = bool(st.st_file_attributes & stat.FILE_ATTRIBUTE_READONLY)
+            else:
+                # Unix fallback: dotfiles are hidden
+                attrs['hidden'] = os.path.basename(filepath).startswith('.')
+                attrs['readonly'] = not os.access(filepath, os.W_OK)
+            return attrs
+        except (OSError, Exception):
+            return {}
+
+    def _detect_attribute_event(self, filepath):
+        """Check if file attributes changed and return the specific event type, or None."""
+        current_attrs = self._get_file_attrs(filepath)
+        prev_attrs = self._file_attrs.get(filepath, {})
+
+        event_type = None
+
+        if prev_attrs and current_attrs:
+            # Detect hidden attribute change
+            if current_attrs.get('hidden') != prev_attrs.get('hidden'):
+                event_type = 'Hidden'
+
+        # Always update stored attributes
+        if current_attrs:
+            self._file_attrs[filepath] = current_attrs
+
+        return event_type
+
+    def init_file_attrs(self, path):
+        """Initialize file attributes for all files in a path so changes can be detected."""
+        try:
+            if os.path.isfile(path):
+                attrs = self._get_file_attrs(path)
+                if attrs:
+                    self._file_attrs[path] = attrs
+            elif os.path.isdir(path):
+                for root, dirs, files in os.walk(path):
+                    for fname in files:
+                        fpath = os.path.join(root, fname)
+                        attrs = self._get_file_attrs(fpath)
+                        if attrs:
+                            self._file_attrs[fpath] = attrs
+        except Exception as e:
+            print(f"  [MONITOR] Error initializing attributes for {path}: {e}")
 
     def _find_protected_object(self, filepath):
         """Find which protected object(s) cover this file path."""
@@ -167,19 +223,40 @@ class SecureTrackHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if not event.is_directory:
+            # Store initial attributes for future change detection
+            attrs = self._get_file_attrs(event.src_path)
+            if attrs:
+                self._file_attrs[event.src_path] = attrs
             self._process_event('Created', event.src_path)
 
     def on_deleted(self, event):
         if not event.is_directory:
+            # Clean up stored attributes
+            self._file_attrs.pop(event.src_path, None)
             self._process_event('Deleted', event.src_path)
 
     def on_modified(self, event):
         if not event.is_directory:
-            self._process_event('Modified', event.src_path)
+            # Check if this is actually an attribute change (hidden, readonly, etc.)
+            attr_event = self._detect_attribute_event(event.src_path)
+            if attr_event:
+                self._process_event(attr_event, event.src_path)
+            else:
+                self._process_event('Modified', event.src_path)
 
     def on_moved(self, event):
         if not event.is_directory:
-            self._process_event('Moved', event.src_path, event.dest_path)
+            src_dir = os.path.dirname(event.src_path)
+            dest_dir = os.path.dirname(event.dest_path)
+            # Same directory = Renamed, different directory = Moved
+            if src_dir.lower() == dest_dir.lower():
+                self._process_event('Renamed', event.src_path, event.dest_path)
+            else:
+                self._process_event('Moved', event.src_path, event.dest_path)
+            # Update attribute tracking for new path
+            old_attrs = self._file_attrs.pop(event.src_path, None)
+            if old_attrs:
+                self._file_attrs[event.dest_path] = old_attrs
 
 
 class MonitorDaemon:
@@ -238,6 +315,8 @@ class MonitorDaemon:
                                     self.event_handler, watch_path, recursive=is_dir
                                 )
                                 self.monitored_paths.add(path)
+                                # Initialize file attributes for change detection
+                                self.event_handler.init_file_attrs(path)
                                 print(f"  [MONITOR] Now watching: {path}")
                         except Exception as e:
                             print(f"  [MONITOR] Error scheduling {path}: {e}")
