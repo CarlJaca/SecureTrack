@@ -19,6 +19,7 @@
             <option value="Renamed" {% if event_type_filter == 'Renamed' %}selected{% endif %}>Renamed</option>
             <option value="Moved" {% if event_type_filter == 'Moved' %}selected{% endif %}>Moved</option>
             <option value="Hidden" {% if event_type_filter == 'Hidden' %}selected{% endif %}>Hidden</option>
+            <option value="Unhidden" {% if event_type_filter == 'Unhidden' %}selected{% endif %}>Unhidden</option>
             <option value="Viewed" {% if event_type_filter == 'Viewed' %}selected{% endif %}>Viewed</option>
             <option value="Accessed" {% if event_type_filter == 'Accessed' %}selected{% endif %}>Accessed</option>
             <option value="Downloaded" {% if event_type_filter == 'Downloaded' %}selected{% endif %}>Downloaded</option>
@@ -56,25 +57,32 @@
     </div>
 
     {% if events %}
-    <table class="data-table">
+    <style>
+        .file-events-table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+    <table class="data-table file-events-table" style="table-layout: fixed; width: 100%;">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Object</th>
-                <th>Event Type</th>
-                <th>File Path</th>
-                <th>User</th>
-                <th>Previous Hash</th>
-                <th>New Hash</th>
-                <th>Risk</th>
-                <th>Date & Time</th>
+                <th style="width: 5%;">ID</th>
+                <th style="width: 15%;">Object</th>
+                <th style="width: 12%;">Event Type</th>
+                <th style="width: 18%;">File Path</th>
+                <th style="width: 10%;">User</th>
+                <th style="width: 10%;">Prev Hash</th>
+                <th style="width: 10%;">New Hash</th>
+                <th style="width: 8%;">Risk</th>
+                <th style="width: 12%;">Date & Time</th>
             </tr>
         </thead>
         <tbody>
             {% for e in events %}
             <tr>
                 <td style="color: var(--text-muted);">#{{ e.id }}</td>
-                <td><i class="fa-regular fa-file" style="margin-right: 4px; color: var(--text-muted);"></i> {{ e.object_name or 'Unknown' }}</td>
+                <td title="{{ e.object_name or 'Unknown' }}"><i class="fa-regular fa-file" style="margin-right: 4px; color: var(--text-muted);"></i> {{ e.object_name or 'Unknown' }}</td>
                 <td>
                     {% if e.event_type == 'Modified' %}<span style="color: var(--warning);"><i class="fa-solid fa-pen" style="margin-right: 3px; font-size: 0.75em;"></i>Modified</span>
                     {% elif e.event_type == 'Deleted' %}<span style="color: var(--danger);"><i class="fa-solid fa-trash" style="margin-right: 3px; font-size: 0.75em;"></i>Deleted</span>
@@ -84,6 +92,7 @@
                     {% elif e.event_type == 'Moved' %}<span style="color: var(--accent-purple);"><i class="fa-solid fa-arrows-up-down" style="margin-right: 3px; font-size: 0.75em;"></i>Moved</span>
                     {% elif e.event_type == 'Renamed' %}<span style="color: var(--accent-amber);"><i class="fa-solid fa-i-cursor" style="margin-right: 3px; font-size: 0.75em;"></i>Renamed</span>
                     {% elif e.event_type == 'Hidden' %}<span style="color: var(--danger);"><i class="fa-solid fa-eye-slash" style="margin-right: 3px; font-size: 0.75em;"></i>Hidden</span>
+                    {% elif e.event_type == 'Unhidden' %}<span style="color: var(--success);"><i class="fa-solid fa-eye" style="margin-right: 3px; font-size: 0.75em;"></i>Unhidden</span>
                     {% elif e.event_type == 'Accessed' %}<span style="color: var(--text-secondary);"><i class="fa-solid fa-door-open" style="margin-right: 3px; font-size: 0.75em;"></i>Accessed</span>
                     {% else %}<span>{{ e.event_type }}</span>{% endif %}
                 </td>
@@ -91,8 +100,8 @@
                     <code>{{ e.file_path }}</code>
                 </td>
                 <td>{{ e.user_name or 'Unknown' }}</td>
-                <td>{% if e.previous_hash %}<span class="hash-text">{{ e.previous_hash[:12] }}...</span>{% else %}<span style="color: var(--text-muted);">—</span>{% endif %}</td>
-                <td>{% if e.new_hash %}<span class="hash-text">{{ e.new_hash[:12] }}...</span>{% else %}<span style="color: var(--text-muted);">—</span>{% endif %}</td>
+                <td title="{{ e.previous_hash or '' }}">{% if e.previous_hash %}<span class="hash-text">{{ e.previous_hash[:12] }}...</span>{% else %}<span style="color: var(--text-muted);">—</span>{% endif %}</td>
+                <td title="{{ e.new_hash or '' }}">{% if e.new_hash %}<span class="hash-text">{{ e.new_hash[:12] }}...</span>{% else %}<span style="color: var(--text-muted);">—</span>{% endif %}</td>
                 <td><span class="badge badge-{{ e.risk_level|lower }}">{{ e.risk_level }}</span></td>
                 <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);">{{ e.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
             </tr>

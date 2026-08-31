@@ -39,6 +39,7 @@ RISK_MAP = {
     'Renamed': 'Medium',
     'Moved': 'Medium',
     'Hidden': 'High',
+    'Unhidden': 'Medium',
 }
 
 # Alert severity titles
@@ -49,6 +50,7 @@ ALERT_TITLES = {
     'Renamed': 'Protected File Renamed',
     'Moved': 'Protected File Moved',
     'Hidden': 'Protected File Hidden',
+    'Unhidden': 'Protected File Unhidden',
 }
 
 
@@ -97,7 +99,10 @@ class SecureTrackHandler(FileSystemEventHandler):
         if prev_attrs and current_attrs:
             # Detect hidden attribute change
             if current_attrs.get('hidden') != prev_attrs.get('hidden'):
-                event_type = 'Hidden'
+                if current_attrs.get('hidden'):
+                    event_type = 'Hidden'
+                else:
+                    event_type = 'Unhidden'
 
         # Always update stored attributes
         if current_attrs:

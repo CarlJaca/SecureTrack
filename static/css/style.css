@@ -49,7 +49,7 @@
     --info-dim: rgba(56, 189, 248, 0.12);
 
     /* Layout */
-    --sidebar-width: 260px;
+    --sidebar-width: 220px;
     --topbar-height: 64px;
     --radius-sm: 6px;
     --radius-md: 10px;
@@ -136,12 +136,12 @@ a:hover { color: var(--accent-emerald); }
 
 .nav-links {
     list-style: none;
-    padding: 12px 0;
+    padding: 8px 0;
     flex: 1;
 }
 
 .nav-section-label {
-    padding: 16px 22px 6px;
+    padding: 12px 16px 4px;
     font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -149,13 +149,13 @@ a:hover { color: var(--accent-emerald); }
     color: var(--text-muted);
 }
 
-.nav-item { margin: 2px 10px; }
+.nav-item { margin: 1px 8px; }
 
 .nav-link {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 9px 14px;
+    gap: 10px;
+    padding: 7px 12px;
     color: var(--text-secondary);
     border-radius: var(--radius-sm);
     transition: all 0.2s ease;
