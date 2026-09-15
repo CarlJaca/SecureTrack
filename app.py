@@ -2,6 +2,10 @@
 SecureTrack - File Access Monitoring & Object Protection System
 Complete Flask application with authentication, RBAC, file monitoring,
 audit logging, security alerts, and third-party user management.
+
+admin: admin@securetrack.local / admin123"
+thirdparty: thirdparty@securetrack.local / user123"
+
 """
 from flask import (
     Flask, render_template, request, redirect, url_for,
