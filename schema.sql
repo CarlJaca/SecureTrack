@@ -3,12 +3,6 @@
 -- File Access Monitoring & Object Protection
 -- ============================================
 
-CREATE DATABASE IF NOT EXISTS securetrack
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE securetrack;
-
 -- Drop existing tables in reverse dependency order
 DROP TABLE IF EXISTS permissions;
 DROP TABLE IF EXISTS alerts;

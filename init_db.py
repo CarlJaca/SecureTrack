@@ -32,6 +32,7 @@ def init_database():
             port=MYSQL_PORT,
             user=MYSQL_USER,
             password=MYSQL_PASSWORD,
+            database=MYSQL_DB,
             charset='utf8mb4'
         )
         print("      Connected successfully!")
