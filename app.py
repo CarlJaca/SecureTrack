@@ -1365,13 +1365,15 @@ def server_error(e):
 # ================================================================
 # APP STARTUP
 # ================================================================
+# Start Watchdog monitor (works for both direct run and gunicorn)
+from monitor import start_monitor_thread
+monitor_daemon = start_monitor_thread()
+
 if __name__ == '__main__':
-    # Start the Watchdog file monitor in a background thread
-    from monitor import start_monitor_thread
     print("\n" + "=" * 50)
     print("  SecureTrack - Starting Application")
     print("=" * 50)
-    monitor_daemon = start_monitor_thread()
     print(f"  Web server: http://127.0.0.1:5000")
     print("=" * 50 + "\n")
     app.run(debug=True, port=5000, use_reloader=False)
+
